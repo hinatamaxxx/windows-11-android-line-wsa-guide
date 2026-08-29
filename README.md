@@ -1,236 +1,326 @@
-# Windows 11でAndroid版LINEを使う
+# Android版LINEをWindows 11で使う
 
-Windows版LINEよりAndroid版の操作感を好む人向けに、Windows 11へWSABuildsとGoogle Playを導入し、Android版LINEを通知領域へ常駐させるまでの手順をまとめています。
+PC版LINEがどうにも使いづらかったので、Windows 11にAndroid版LINEを入れてみました。
 
-このリポジトリにはWSA、Google Play、LINE本体は含めていません。配布元の正規ページから各自で取得してください。
+このガイドでは、Android版LINEのインストールだけでなく、Windowsへのログインと同時に起動し、タスクバー右下の通知領域へLINEアイコンで常駐させるところまで扱います。LINEアプリはGoogle Playから自動更新されます。
 
-## 先に知っておくこと
+## いちばん簡単なやり方
 
-- Microsoft公式のWindows Subsystem for Android（WSA）は、2025年3月5日にサポートとMicrosoft Storeでの配布を終了しました。
-- この手順で使う[MustardChef/WSABuilds](https://github.com/MustardChef/WSABuilds)はコミュニティーによる非公式ビルドです。Microsoft、Google、LINEヤフーによるサポートは受けられません。
-- Windows Update、Google Play開発者サービス、LINE側の仕様変更により、将来動かなくなる可能性があります。
-- GoogleアカウントとLINEアカウントを扱います。配布元、ファイル名、ハッシュ値を確認し、自己責任で利用してください。
-- LINEのトーク履歴など、必要なデータは作業前にバックアップしてください。
+細かい手順を自分で追うより、**CodexやClaude Codeなどのコーディングエージェントに、このページのURLを渡して頼む**のが楽です。
 
-Microsoftの案内: [Amazon AppstoreとWSAのサポート終了](https://support.microsoft.com/en-us/windows/apps/mobileapps/uninstall-the-amazon-appstore-and-mobile-apps-on-windows)
+たとえば、次のように頼んでください。
 
-## この構成でできること
+```text
+このガイドを読んで、私のWindows 11にAndroid版LINEを入れてください。
+Google PlayからLINEを自動更新できるようにして、Windows起動時に自動起動し、
+タスクバー右下の通知領域へLINEアイコンで常駐するところまで設定してください。
 
-- Windows 11上でAndroid版LINEを起動
-- Google PlayからLINEをインストール
-- Google Play経由でLINEを自動更新
-- Windowsへのサインイン時にLINEと常駐ヘルパーを自動起動
-- LINEのウィンドウを隠して、右下の通知領域へLINEアイコンで常駐
-- スタートメニューの「LINE (Android)」または通知領域アイコンのダブルクリックで再表示
-- PowerShell画面を出さずに起動
+https://github.com/hinatamaxxx/windows-11-android-line-wsa-guide
+```
 
-## 動作確認環境
+途中でWindowsの再起動、Googleアカウントへのログイン、LINEへのログインが必要になります。その部分だけは自分で操作してください。管理者権限を求められたときも、表示されている内容を確認してから許可しましょう。
+
+正直に言うと、このガイドを公開している私もWSAの仕組みを隅々まで理解しているわけではありません。実際に動いた手順を、あとから再現できるようにまとめたものです。
+
+Microsoftのサポートが終わった機能と非公式ビルドを使います。突然動かなくなったり、Windows Updateの影響を受けたりする可能性があります。大切なトーク履歴などは先にバックアップし、**自己責任で試してください**。
+
+## どんな状態になるの？
+
+設定が終わると、次のようになります。
+
+- Windows 11でAndroid版LINEが動く
+- LINEはGoogle Playからインストールされる
+- LINEの新しいバージョンはGoogle Play経由で自動更新される
+- Windowsへログインすると、LINEと常駐用ヘルパーが自動で立ち上がる
+- LINEの画面を閉じても、タスクバー右下の通知領域にLINEアイコンが残る
+- LINEアイコンをダブルクリックすると、LINEの画面が戻ってくる
+- スタートメニューの「LINE (Android)」から普通に起動できる
+- 起動時にPowerShellの黒い画面は出ない
+
+## 先に知っておいてほしいこと
+
+WindowsでAndroidアプリを動かすために使われていた「Windows Subsystem for Android」、通称WSAは、2025年3月5日でMicrosoftのサポートとMicrosoft Storeでの配布が終わりました。
+
+そこで今回は、コミュニティーがメンテナンスしている[MustardChef/WSABuilds](https://github.com/MustardChef/WSABuilds)を使います。これはMicrosoft、Google、LINEヤフーの公式ツールではありません。
+
+そのため、次の点を理解したうえで使ってください。
+
+- MicrosoftやLINEの公式サポートへ問い合わせても対応してもらえません
+- WindowsやLINEの仕様変更で使えなくなる可能性があります
+- GoogleアカウントとLINEアカウントを扱うため、ファイルは必ず正しい配布元から入手してください
+- LINEやWSAの中にある大切なデータは、作業前にバックアップしてください
+
+Microsoftによる案内はこちらです。
+
+- [Amazon AppstoreとWSAのサポート終了について](https://support.microsoft.com/ja-jp/windows/apps/mobileapps/uninstall-the-amazon-appstore-and-mobile-apps-on-windows)
+
+## 今回、実際に動いた環境
 
 | 項目 | 内容 |
 |---|---|
-| OS | Windows 11 Home 23H2 / build 22631 / x64 |
+| Windows | Windows 11 Home 23H2 / build 22631 / x64 |
 | WSA | 2407.40000.4.0 |
 | WSABuilds | LTS Build 7 Hotfix 1 |
-| Android | 13 |
-| LINE | `jp.naver.line.android` 26.13.1 |
-| 確認日 | 2026-08-30 |
+| Android | Android 13 |
+| LINE | 26.13.1 / `jp.naver.line.android` |
+| 確認日 | 2026年8月30日 |
 
-確認時に使ったファイル:
+使ったWSABuildsのファイルは次のものです。
 
-- `WSA_2407.40000.4.0_x64_Release-Nightly-GApps-13.0-NoAmazon.7z`
-- SHA-256: `7db5aa71251c9665ca9fda451b6b6af6d0e430158578e354d9f964cab8c9ad7b`
-- Playストア復旧用NoGApps版のSHA-256: `d3f4d324651dcdef8bfd7049c7a566994b7eae3f093d3fff2676ac9f205d8b04`
+```text
+WSA_2407.40000.4.0_x64_Release-Nightly-GApps-13.0-NoAmazon.7z
+```
 
-新規導入時は固定リンクではなく、[WSABuildsの最新リリース](https://github.com/MustardChef/WSABuilds/releases)と説明を確認してください。
+確認したSHA-256は次のとおりです。
 
-## 1. 必要条件を確認する
+```text
+7db5aa71251c9665ca9fda451b6b6af6d0e430158578e354d9f964cab8c9ad7b
+```
 
-- Windows 11 x64
-- 8 GB以上のメモリ（16 GB推奨）
+Playストアの復旧に使ったNoGApps版のSHA-256はこちらです。
+
+```text
+d3f4d324651dcdef8bfd7049c7a566994b7eae3f093d3fff2676ac9f205d8b04
+```
+
+これから新しく入れる場合は、同じファイルに決め打ちせず、[WSABuildsの最新リリース](https://github.com/MustardChef/WSABuilds/releases)に書かれている説明を優先してください。
+
+---
+
+## ここから手作業で進める場合の手順
+
+CodexやClaude Codeへ任せず、自分で作業する場合はこちらを上から順番に進めます。
+
+## 1. パソコンが対応しているか確認する
+
+目安は次のとおりです。
+
+- Windows 11の64ビット版
+- メモリ8 GB以上、できれば16 GB以上
 - SSD推奨
-- NTFS形式のドライブ
-- BIOS/UEFIでCPU仮想化が有効
-- 管理者権限
-- 7-ZipまたはWinRARの最新版
+- WSAを置くドライブがNTFS形式
+- BIOSまたはUEFIでCPUの仮想化が有効
+- Windowsの管理者権限を使える
+- 新しいバージョンの7-ZipまたはWinRAR
 
-タスクマネージャーの「パフォーマンス」→「CPU」で、「仮想化: 有効」になっていることを確認します。
+仮想化については、タスクマネージャーを開いて「パフォーマンス」→「CPU」と進み、「仮想化: 有効」になっていれば大丈夫です。
+
+「無効」になっている場合は、パソコンのBIOSまたはUEFI設定でIntel VT-x、Intel Virtualization Technology、AMD-V、SVMなどの項目を有効にします。名称はメーカーによって違います。
 
 ## 2. Windowsの仮想化機能を有効にする
 
-「ターミナル（管理者）」または「PowerShell（管理者）」を開き、次を実行します。
+スタートボタンを右クリックし、「ターミナル（管理者）」を開きます。次の2行を順番に実行してください。
 
 ```powershell
 dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
 dism.exe /online /enable-feature /featurename:HypervisorPlatform /all /norestart
 ```
 
-完了したらWindowsを再起動します。
+処理が終わったらWindowsを再起動します。
 
-## 3. WSABuildsを導入する
+## 3. WSABuildsをダウンロードする
 
-1. [MustardChef/WSABuilds Releases](https://github.com/MustardChef/WSABuilds/releases)を開きます。
-2. Windows 11 x64用の最新安定版を選びます。
-3. Google Playを使うため、ファイル名に `GApps` または `MindTheGapps` が含まれるものを選びます。
-4. Amazon Appstoreが不要なら、`NoAmazon` または `RemovedAmazon` を選びます。
-5. ダウンロードした7zファイルのSHA-256をリリース記載値と照合します。
+1. [WSABuildsのリリースページ](https://github.com/MustardChef/WSABuilds/releases)を開きます。
+2. Windows 11 x64向けの新しい安定版を探します。
+3. Google Playを使いたいので、ファイル名に `GApps` または `MindTheGapps` が入っているものを選びます。
+4. Amazon Appstoreがいらない場合は、`NoAmazon` または `RemovedAmazon` と書かれているものを選びます。
+
+似た名前のファイルがたくさんあります。x64とARM64、GAppsありとなしを間違えないようにしてください。
+
+ダウンロードが終わったら、ファイルが壊れていないかSHA-256を確認します。PowerShellで次のように実行します。
 
 ```powershell
-Get-FileHash "C:\Users\あなた\Downloads\ダウンロードしたファイル.7z" -Algorithm SHA256
+Get-FileHash "C:\Users\あなたの名前\Downloads\ダウンロードしたファイル.7z" -Algorithm SHA256
 ```
 
-7zを展開し、フォルダーを削除されない恒久的な場所へ移動します。例:
+表示された値を、リリースページに書かれている値と見比べます。
+
+## 4. WSABuildsをインストールする
+
+ダウンロードした7zファイルを展開し、消したり移動したりしない場所へ置きます。
+
+たとえば、次のような場所です。
 
 ```text
-C:\Users\あなた\Documents\WSA
+C:\Users\あなたの名前\Documents\WSA
 ```
 
-WSABuildsは展開済みファイルをAppxとして登録する方式です。インストール後もこのフォルダーを移動・削除しないでください。また、exFATではなくNTFS上へ置いてください。
+WSABuildsは、展開したファイルをその場所からWindowsへ登録して使います。インストール後にフォルダーを削除したり、別の場所へ移したりすると動かなくなります。また、exFATではなくNTFSのドライブへ置いてください。
 
-展開先の `Run.bat` を右クリックし、「管理者として実行」します。画面の指示に従い、WSAが起動するまで待ちます。
+展開したフォルダーの中にある `Run.bat` を右クリックし、「管理者として実行」を選びます。あとは画面の指示に従い、WSAが起動するまで待ちます。
 
-既存の公式WSAや別の改造版WSAがある場合は、WSABuildsのリリース説明に従って先に完全アンインストールしてください。データを引き継ぐ場合は、作業前に次のファイルをバックアップします。
+すでに公式版WSAや別の改造版WSAを入れている場合は、WSABuildsの説明に従って先にアンインストールします。以前のデータを残したい場合は、次のファイルを別の場所へコピーしておきます。
 
 ```text
 %LOCALAPPDATA%\Packages\MicrosoftCorporationII.WindowsSubsystemForAndroid_8wekyb3d8bbwe\LocalCache\userdata.vhdx
 ```
 
-## 4. Google PlayへログインしてLINEを入れる
+## 5. Google PlayからLINEを入れる
 
 1. スタートメニューから「Windows Subsystem for Android」を開きます。
-2. WSAを一度起動し、初期化が完了するまで待ちます。
+2. 最初の起動には少し時間がかかるので、初期化が終わるまで待ちます。
 3. スタートメニューから「Play ストア」を開きます。
 4. Googleアカウントでログインします。
-5. Google Playで[LINE（公式）](https://play.google.com/store/apps/details?id=jp.naver.line.android)を検索します。
-6. パッケージ名が `jp.naver.line.android` であることを確認し、インストールします。
-7. LINEを起動してログインします。
+5. Playストアで「LINE」を検索します。
+6. 提供元とパッケージ名 `jp.naver.line.android` を確認してインストールします。
+7. LINEを開き、自分のアカウントでログインします。
 
-非公式APK配布サイトからLINEを入れると、Google Playによる正常な更新や署名検証を利用できない場合があります。このガイドではGoogle Play版だけを使います。
+LINEはこちらの[Google Play公式ページ](https://play.google.com/store/apps/details?id=jp.naver.line.android)から確認できます。
 
-## 5. LINEを自動更新する
+よく分からないAPK配布サイトからLINEをダウンロードするのはおすすめしません。Google Playから入れておけば、署名を確認した正規アプリを使え、更新もGoogle Playへ任せられます。
 
-Google Playを開き、右上のプロフィール画像から次の設定を行います。
+## 6. LINEを自動更新する
 
-1. 「設定」→「ネットワーク設定」→「アプリの自動更新」を開きます。
-2. 「Wi-Fi経由のみ」または「すべてのネットワーク」を選びます。
-3. LINEのGoogle Play詳細ページを開き、右上のメニューから「自動更新の有効化」がオンになっていることを確認します。
+Playストアを開き、右上にある自分のプロフィール画像を押します。
 
-Google Playは更新を順次配信するため、公開直後に必ず更新されるわけではありません。Googleアカウントのログインエラー、ストレージ不足、WSAが長期間起動していない場合も自動更新されないことがあります。
+1. 「設定」を開きます。
+2. 「ネットワーク設定」を開きます。
+3. 「アプリの自動更新」を選びます。
+4. 「Wi-Fi経由のみ」または「すべてのネットワーク」を選びます。
 
-手動確認は「Play ストア」→プロフィール画像→「アプリとデバイスの管理」→「アップデート利用可能」から行えます。公式説明は[Google Playヘルプ](https://support.google.com/googleplay/answer/113412?hl=ja)を参照してください。
+次にLINEのPlayストア画面を開き、右上のメニューにある「自動更新の有効化」がオンになっていることを確認します。
 
-このリポジトリの常駐ヘルパーを使うとWindowsログイン時にWSAが起動するため、Google Playのバックグラウンド更新が動ける状態を作りやすくなります。ただし、更新時刻を強制するものではありません。
+更新があるか自分で確認したいときは、「Play ストア」→プロフィール画像→「アプリとデバイスの管理」→「アップデート利用可能」と進みます。
 
-## 6. LINEを通知領域へ常駐させる
+Google Playの自動更新は、最新版が出た瞬間に必ず始まるわけではありません。Googleアカウントのエラー、空き容量不足、WSAが長い間起動していない場合などは更新されないことがあります。
 
-このリポジトリを取得します。
+- [Google Play公式ヘルプ: Androidアプリを更新する方法](https://support.google.com/googleplay/answer/113412?hl=ja)
+
+このあと設定する常駐ヘルパーは、Windowsへのログイン時にWSAを起動します。そのため、Google Playがバックグラウンドで更新を確認しやすい状態になります。ただし、決まった時刻に更新を強制するものではありません。
+
+## 7. LINEをタスクバー右下へ常駐させる
+
+ここからは、このリポジトリに入っている常駐ヘルパーを使います。
+
+Gitが使える場合は、PowerShellで次のように取得します。
 
 ```powershell
 git clone https://github.com/hinatamaxxx/windows-11-android-line-wsa-guide.git
 cd windows-11-android-line-wsa-guide
 ```
 
-通常のPowerShellで次を実行します。管理者権限は不要です。
+Gitを使わない場合は、GitHubページ右上付近にある「Code」→「Download ZIP」からダウンロードし、ZIPを展開してください。
+
+取得したフォルダーでPowerShellを開き、次を実行します。ここは管理者権限なしで大丈夫です。
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-インストーラーは次の設定だけを行います。
+このスクリプトが行うことは次のとおりです。
 
-- `%LOCALAPPDATA%\WSA-LINE-Tray` へ常駐ヘルパーをコピー
-- インストール済みAndroid版LINEのアイコンをWSAのローカルデータからコピー
-- スタートメニューへ「LINE (Android)」を作成
-- スタートアップへ常駐ヘルパーのショートカットを作成
-- 常駐ヘルパーを起動
+- `%LOCALAPPDATA%\WSA-LINE-Tray` に常駐ヘルパーをコピーする
+- WSAが作ったAndroid版LINEのアイコンをコピーする
+- スタートメニューに「LINE (Android)」を作る
+- Windowsのスタートアップに常駐ヘルパーを登録する
+- 常駐ヘルパーをその場で起動する
 
-以後はスタートメニューの「LINE (Android)」を使います。必要なら右クリックして「タスクバーにピン留めする」を選んでください。WSAが自動生成した別のLINEアイコンを固定している場合は、混同を防ぐため固定を外します。
+設定後は、スタートメニューの「LINE (Android)」からLINEを開いてください。よく使う場合は右クリックして、タスクバーへピン留めすると便利です。
 
-### 常駐アイコンの操作
+WSAが自動で作ったLINEショートカットをすでにピン留めしている場合は、見分けがつきにくいので古いほうのピン留めを外し、新しい「LINE (Android)」を固定し直してください。
 
-- ダブルクリック: LINEを表示
-- 右クリック→「Show LINE」: LINEを表示
-- 右クリック→「Hide to tray」: LINEのウィンドウを非表示
-- 右クリック→「Close LINE」: Android版LINEのウィンドウを閉じる
-- 右クリック→「Exit tray helper」: ヘルパーだけを終了
+### 右下のLINEアイコンでできること
 
-Windows 11でアイコンが見えない場合は、「設定」→「個人用設定」→「タスクバー」→「その他のシステム トレイ アイコン」で表示を有効にします。
+- ダブルクリック: LINEの画面を表示
+- `Show LINE`: LINEの画面を表示
+- `Hide to tray`: LINEの画面を隠して、アイコンだけ残す
+- `Close LINE`: Android版LINEの画面を閉じる
+- `Exit tray helper`: 常駐ヘルパーを終了する
 
-## Playストアがすぐ落ちる場合
+アイコンが隠れている場合は、「設定」→「個人用設定」→「タスクバー」→「その他のシステム トレイ アイコン」を開き、LINEの表示をオンにします。
 
-まず次を順番に試します。
+---
+
+## Playストアが起動してもすぐ落ちる場合
+
+今回の環境では、最初にここで引っかかりました。まずは次の順番で試してください。
 
 1. WSAの設定画面からWSAをシャットダウンする。
 2. Windowsを再起動する。
-3. WSAを起動し、初期化完了後にPlayストアを開く。
-4. WSABuildsの同じリリースを再展開し、`Run.bat` で再登録する。
-5. 改善しない場合は、`userdata.vhdx` をバックアップしてクリーンインストールする。
+3. WSAを先に起動し、初期化が終わってからPlayストアを開く。
+4. 同じWSABuildsをもう一度展開し、`Run.bat` で再登録する。
+5. 直らない場合は、`userdata.vhdx` をバックアップしてからクリーンインストールする。
 
-### LTS 7 Hotfix 1で実際に有効だった回避策
+### 今回、実際に直った方法
 
-検証環境では、GApps版のクリーンインストール直後にPlayストアが落ち続けました。次の順序で復旧しました。
+LTS 7 Hotfix 1では、GApps版を普通にクリーンインストールしただけだと、Playストアが落ち続けることがありました。今回のパソコンでは、次の手順で直りました。
 
-1. 同一リリース・同一アーキテクチャの `NoGApps-NoAmazon` 版を別フォルダーへ展開する。
-2. 既存データをバックアップ後、WSAをアンインストールする。
-3. NoGApps版の `Run.bat` を管理者として実行し、WSAを一度完全に初期化する。
-4. WSAをシャットダウンする。
-5. 同一リリースの `GApps-NoAmazon` 版ファイルをNoGApps版の展開先へ上書きする。
-6. `Run.bat` を再度管理者として実行し、WSAを再登録する。
-7. WSAを起動してからPlayストアを開く。
+1. 同じリリース、同じx64版の `NoGApps-NoAmazon` を別フォルダーへ展開する。
+2. 必要なデータをバックアップしてから、現在のWSAをアンインストールする。
+3. NoGApps版の `Run.bat` を管理者として実行する。
+4. WSAを一度起動し、初期化が終わるまで待つ。
+5. WSAをシャットダウンする。
+6. 同じリリースの `GApps-NoAmazon` 版を、NoGApps版の展開先へ上書きする。
+7. `Run.bat` をもう一度管理者として実行し、WSAを再登録する。
+8. WSAを起動してからPlayストアを開く。
 
-これは公式の標準手順ではなく、同じビルド同士でのみ試した回避策です。異なるWSAバージョンやx64/ARM64を混ぜないでください。先に[WSABuildsのIssues](https://github.com/MustardChef/WSABuilds/issues)で同じ症状と最新の解決策を確認してください。
+これはWSABuildsの標準的なインストール手順ではなく、今回の環境で効いた回避策です。違うバージョン同士、x64とARM64などを混ぜるのは避けてください。
 
-## WSA本体を更新する
+同じ症状が出ている人がいるか、先に[WSABuildsのIssues](https://github.com/MustardChef/WSABuilds/issues)を確認することをおすすめします。新しい解決方法が案内されている場合は、そちらを優先してください。
 
-LINEはGoogle Playで自動更新できますが、WSABuilds本体は原則として手動更新です。
+## WSA本体の更新について
 
-1. [WSABuilds Releases](https://github.com/MustardChef/WSABuilds/releases)で新しいリリースと注意事項を確認します。
-2. `userdata.vhdx` をバックアップします。
-3. 同じエディション、アーキテクチャ、GApps構成の更新版を選びます。
-4. リリースに記載された更新手順を優先します。
-5. 更新後にPlayストア、LINE、通知、常駐ヘルパーを確認します。
+LINEアプリはGoogle Playに自動更新を任せられますが、WSABuilds本体は手動で更新するほうが安全です。
 
-WSABuilds側の更新を完全自動化すると、壊れたリリースや構成違いまで無人適用する危険があります。このガイドではLINEだけを自動更新し、WSA本体はバックアップを取って手動更新する方針です。
+更新するときは、次の流れがおすすめです。
 
-## 開発者モードとADB
+1. [WSABuildsのリリースページ](https://github.com/MustardChef/WSABuilds/releases)で新しい版と注意事項を確認する。
+2. `userdata.vhdx` をバックアップする。
+3. 現在と同じx64/ARM64、GAppsあり/なしの構成を選ぶ。
+4. リリースページに書かれた更新手順に従う。
+5. 更新後にPlayストア、LINE、通知、常駐ヘルパーを確認する。
 
-通常利用ではWSAの開発者モードは不要です。ADBで確認や修復を行った場合は、作業後に開発者モードをオフにし、ADBサーバーも終了します。
+WSABuildsまで完全自動更新にすると、問題のあるリリースや違う構成を気づかず入れてしまうおそれがあります。このガイドでは、LINEだけを自動更新し、WSABuildsはバックアップを取ってから手動更新する方針にしています。
+
+## ADBを使った場合は、あとで閉じる
+
+普通にLINEを使うだけなら、WSAの開発者モードやADBは必要ありません。
+
+トラブル調査のためにADBを使った場合は、作業が終わったらWSAの開発者モードをオフにし、次のコマンドでADBも終了しておきます。
 
 ```powershell
 adb kill-server
 ```
 
-開発者モードを常時有効にしないことで、不要なローカルADB接続口を閉じられます。
+## 常駐設定を元に戻す
 
-## 常駐ヘルパーを削除する
-
-リポジトリのフォルダーで次を実行します。
+このリポジトリを展開したフォルダーで、次を実行します。
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\uninstall.ps1
 ```
 
-常駐ヘルパーと作成したショートカットだけを削除します。LINE、WSA、トーク履歴は削除しません。
+削除されるのは、このリポジトリが入れた常駐ヘルパーとショートカットだけです。LINE、WSA、トーク履歴は削除しません。
 
-## よくある問題
+## 困ったとき
 
-### PowerShellの画面が出る
+### LINEを起動したらPowerShellの画面が出てきた
 
-スタートメニューの「LINE (Android)」を使ってください。このショートカットは `wscript.exe` を経由してPowerShellを非表示で実行します。WSAが自動生成したLINEショートカットとは別物です。
+スタートメニューの「LINE (Android)」から起動してください。このショートカットは、PowerShellを画面に出さないためのランチャーを経由します。WSAが最初から作っているLINEショートカットとは別物です。
 
-### LINEが開かず、アイコンだけ常駐する
+### LINEが開かず、右下にアイコンだけ出ている
 
-通知領域のLINEアイコンをダブルクリックします。改善しない場合はWSAを一度シャットダウンし、スタートメニューの「LINE (Android)」から起動し直します。
+右下のLINEアイコンをダブルクリックしてください。それでも開かない場合は、WSAをいったんシャットダウンし、スタートメニューの「LINE (Android)」から起動し直します。
 
-### アイコンが汎用アイコンになる
+### LINEの緑色アイコンにならない
 
-Android版LINEを一度起動した後、`install.ps1` を再実行してください。WSAが生成した `jp.naver.line.android.ico` を再取得します。
+Android版LINEを一度起動してから、`install.ps1` をもう一度実行してください。WSAが作ったLINEアイコンを取り込み直します。
 
-### 通知が来ない
+### LINEの通知が来ない
 
-AndroidのLINE設定、WSAの通知設定、Windowsの通知設定、省電力設定を確認します。WSA自体が停止している間はAndroid側のバックグラウンド通知を受け取れません。
+次の設定を順番に確認します。
 
-## 免責とライセンス
+- Android版LINEの通知設定
+- WSA内のAndroid通知設定
+- Windows 11の通知設定
+- WindowsとWSAの省電力設定
 
-このガイドと常駐ヘルパーは無保証です。アカウント、データ、端末に生じた損害について作者は責任を負いません。
+WSAそのものが止まっている間は、Android版LINEもバックグラウンドで動けません。
 
-常駐ヘルパーのコードは[MIT License](LICENSE)です。LINEおよびLINEロゴはLINEヤフー株式会社の商標または登録商標です。このリポジトリは同社と提携・承認関係にありません。
+## 最後に
+
+この方法は、サポートが終了したWSAを非公式ビルドで動かすものです。「このとおりにすれば、どのパソコンでもずっと動く」と保証できるものではありません。
+
+私の環境では動きましたが、環境によってはうまくいかないこともあると思います。バックアップを取り、表示された内容を確認しながら、自己責任で試してください。
+
+常駐ヘルパーのコードは[MIT License](LICENSE)で公開しています。LINEおよびLINEロゴはLINEヤフー株式会社の商標または登録商標です。このリポジトリはLINEヤフー株式会社、Microsoft、Google、MustardChef/WSABuildsと提携・承認関係にありません。
