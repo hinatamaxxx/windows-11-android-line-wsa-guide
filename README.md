@@ -6,7 +6,7 @@ PC版LINEがどうにも使いづらかったので、Windows 11にAndroid版LIN
 
 ## 関連ツール：Windows版LINEを通知領域へ起動する
 
-Windows版LINE（デスクトップ版）を、PC起動時に画面を出さず通知領域へ常駐させる **[LINE Tray Startup](https://github.com/hinatamaxxx/line-startup-to-tray)** も公開しています。ダウンロードや詳しい使い方は、リンク先をご覧ください。
+Windows版LINE（デスクトップ版）を、PC起動時に画面を出さず通知領域へ常駐させる **[Windows版LINEを通知領域で起動](https://github.com/hinatamaxxx/windows-line-start-to-tray)** も公開しています。ダウンロードや詳しい使い方は、リンク先をご覧ください。
 
 ## いちばん簡単なやり方
 
