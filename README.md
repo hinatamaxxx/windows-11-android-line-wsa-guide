@@ -13,7 +13,7 @@ Windows版LINEを使い、PC起動時に画面を出さず通知領域へ常駐�
 ### Windows版向けツールのセットアップ
 
 1. Windows版LINEにログインし、LINE本体の **自動ログインをON** にします。その後、通知領域のLINEを右クリックして **「終了」** します。
-2. [配布ページ](https://github.com/hinatamaxxx/line-startup-to-tray/releases/tag/v0.2.0-preview.1)の **Assets** から `LineTrayStartup-Setup-0.2.0-preview.1.exe` をダウンロードします。
+2. [配布ページ](https://github.com/hinatamaxxx/line-startup-to-tray/releases/tag/v0.2.0-preview.2)の **Assets** から `LineTrayStartup-Setup-0.2.0-preview.2.exe` をダウンロードします。
 3. EXEを開き、**「セットアップ」** を押します。完了後は **「LINEを起動」** ボタンを押し、通知領域にアイコンが現れることと、ダブルクリックでLINEを開けることを確認してください。
 
 管理者権限やコマンド入力は不要です。セットアップ後は、Windowsへのサインイン時に、本ツール経由でWindows版LINEを通知領域へ自動起動する設定になります。
