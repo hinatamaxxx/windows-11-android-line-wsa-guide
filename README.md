@@ -4,6 +4,26 @@ PC版LINEがどうにも使いづらかったので、Windows 11にAndroid版LIN
 
 このガイドでは、Android版LINEのインストールだけでなく、Windowsへのログインと同時に起動し、タスクバー右下の通知領域へLINEアイコンで常駐させるところまで扱います。LINEアプリはGoogle Playから自動更新されます。
 
+## 2026年9月28日追記：Windows版LINE向けの非表示起動ツールも公開しました
+
+Windows版LINEを使い、PC起動時に画面を出さず通知領域へ常駐させたい方に向けて、**[LINE Tray Startup](https://github.com/hinatamaxxx/line-startup-to-tray)** を公開しました。
+
+**Windows版LINE（デスクトップ版）専用の補助ツール**です。Android版LINEを使う場合は、このページのWSA向け手順へ進んでください。
+
+### Windows版向けツールのセットアップ
+
+1. Windows版LINEにログインし、LINE本体の **自動ログインをON** にします。その後、通知領域のLINEを右クリックして **「終了」** します。
+2. [配布ページ](https://github.com/hinatamaxxx/line-startup-to-tray/releases/tag/v0.2.0-preview.1)の **Assets** から `LineTrayStartup-Setup-0.2.0-preview.1.exe` をダウンロードします。
+3. EXEを開き、**「セットアップ」** を押します。完了後は **「LINEを起動」** ボタンを押し、通知領域にアイコンが現れることと、ダブルクリックでLINEを開けることを確認してください。
+
+管理者権限やコマンド入力は不要です。セットアップ後は、Windowsへのサインイン時に、本ツール経由でWindows版LINEを通知領域へ自動起動する設定になります。
+
+このツールは、LINEがウィンドウを表示しようとするタイミングで表示要求を抑え、LINE本来の「閉じる」処理で通知領域へ移します。一定間隔でウィンドウを探す監視ループは使っていません。LINEの実行ファイルやログイン情報は変更しません。
+
+現在は **プレビュー版** です。Windows 11 x64・LINE 26.4.2.3957で、非表示起動、アイコンからの再表示、ログイン維持を確認しています。**PC再起動を伴う最終確認は未実施**で、LINEの更新により動作しなくなる場合もあります。
+
+詳しい使い方、対応環境、設定を元に戻す方法は、[LINE Tray Startupの利用案内](https://github.com/hinatamaxxx/line-startup-to-tray#readme)にまとめています。仕組みを詳しく知りたい方は、[実装の説明](https://github.com/hinatamaxxx/line-startup-to-tray/blob/main/docs/architecture.md)もご覧ください。
+
 ## いちばん簡単なやり方
 
 細かい手順を自分で追うより、**CodexやClaude Codeなどのコーディングエージェントに、このページのURLを渡して頼む**のが楽です。
